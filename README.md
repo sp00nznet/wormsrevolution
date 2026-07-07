@@ -6,30 +6,31 @@ original code is translated to C++ with the [ReXGlue SDK](https://github.com/rex
 **v0.8.0** and linked against its runtime. It builds clean and boots into the
 runtime; bring-up is in progress.
 
-## Status: **boots into runtime** 🪱
+## Status: **renders the intro** 🪱
 
-Extraction → triage → codegen → build all done in one sitting. `worms.exe` links
-on the first try and boots a **healthy runtime** — D3D12 device, SDL3 input, audio
-+ XMA threads, GPU/VSync threads, the guest disk mounted, `default.xex` loaded, the
-function table live, and shader storage spun up for title `58411290`. It then hits
-the house-standard first wall: a call to an unregistered function (`0x823D0608`) —
-a branch/pointer target that branch-following discovery didn't place. That's the
-next thing to crack. See [PROGRESS.md](PROGRESS.md) for the blow-by-blow.
+Extraction → triage → codegen → build → bring-up, all in one sitting. `worms.exe`
+links on the first try, boots crash-free, and **renders the Team17 intro logo and
+the intro cinematic** — full-motion video decoding and presenting natively.
+
+![Worms Revolution — Team17 intro rendering natively](images/team17_splash.png)
+
+*The Team17 Digital Ltd intro, rendered by the recompiled game on D3D12. From here
+it rolls into the intro movie (`images/intro_movie.png`).* See
+[PROGRESS.md](PROGRESS.md) for the full blow-by-blow.
 
 ## How it got here
 
-The whole pipeline — from a downloaded package to a booting `.exe` — in one pass:
+The whole pipeline — from a downloaded package to a rendering `.exe` — in one pass:
 
 ```
 GoD package ──▶ STFS extract ──▶ XEX triage ──▶ rexglue init + codegen
               (170 files)      (base 0x82000000)  (PowerPC → C++, 88,816 fns)
       │
       └──▶ cmake/clang build ──▶ worms.exe (74 MB) ──▶ boot ──▶ runtime up
-           ──▶ XEX loaded ──▶ ⛔ first unregistered-fn crash @ 0x823D0608
+           ──▶ XEX loaded ──▶ 🎬 Team17 splash + intro movie rendering
 ```
 
-Codegen and build were minutes of work. The craft ahead is **runtime bring-up** —
-getting the recompiled code to actually run:
+Codegen and build were minutes of work. The craft was **runtime bring-up**:
 
 - **Codegen hints.** The first codegen pass surfaced 13 `UnresolvedCall` tail-call
   targets sitting outside any discovered function. Registered all 13 as
@@ -39,9 +40,17 @@ getting the recompiled code to actually run:
   link error (imported by ~26% of 360 titles, missing from the runtime exports),
   we dropped the toolkit's `stubs.cpp` in up front. Result: **linked on the first
   try**, no iteration.
-- **First boot.** Runtime comes up fully and loads the XEX before the first
-  unregistered-function FATAL — exactly the crash class the playbook predicts for a
-  fresh port. Next move is the batch vtable/thunk registration pass.
+- **The unregistered-function wall.** First boot came up fully and loaded the XEX,
+  then FATAL'd on a call to `0x823D0608`. Cleared the whole class in two passes:
+  (1) dumped the runtime-decompressed image via a one-shot `OnPostLoadXexImage`
+  hook (`extract_pe.py` can't decode this LZX variant) and batch-registered **427**
+  vtable/RTTI-referenced functions found by `find_missing_vtable_funcs.py`;
+  (2) wired a tolerant indirect dispatcher to **harvest** the handful of
+  `lis/addi`-computed targets that pointer scans can't see (just 3 on the boot
+  path). **444 hints** total → boots crash-free.
+- **Rendering.** Team17 logo and the intro cinematic present on D3D12. Some
+  geometry draws still fail an invalid vertex-fetch-constant check — the next
+  bring-up target.
 
 ## Binary facts
 
@@ -83,12 +92,15 @@ cmake --build out/build/win-amd64-release
 
 ```
 project/
-  worms_manifest.toml     # codegen config + the 13 function-entry hints
-  CMakeLists.txt          # wires in src/main.cpp + src/stubs.cpp
-  src/main.cpp            # ReXApp entry point
-  src/stubs.cpp           # kernel stubs (XUsbcam*)
-  generated/default/      # codegen output — git-ignored, regenerable
-extracted/                # game data — bring your own (git-ignored)
+  worms_manifest.toml       # codegen config + 444 function-entry hints (the bring-up work)
+  CMakeLists.txt            # sources + optional -DWORMS_HARVEST harvest build
+  src/main.cpp              # ReXApp entry point
+  src/worms_app.h           # app hooks (incl. one-shot REX_DUMP_IMAGE image dump)
+  src/stubs.cpp             # kernel stubs (XUsbcam*)
+  src/dispatch_tolerance.cpp # bring-up harvest scaffold (off by default)
+  generated/default/        # codegen output — git-ignored, regenerable
+images/                     # screenshots captured from the running port
+extracted/                  # game data — bring your own (git-ignored)
 ```
 
 ## Credits
