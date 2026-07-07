@@ -1,0 +1,47 @@
+# Game data — bring your own package / XEX (copyrighted, never committed)
+extracted/
+Worms Revolution/
+*.rar
+*.zip
+*.7z
+
+# ReXGlue codegen output (regenerate: cd project && rexglue codegen)
+project/generated/default/
+
+# ReXGlue SDK (external dependency, referenced in place)
+tools/rexglue-sdk/
+
+# Build artifacts
+build/
+out/
+project/out/
+cmake-build-*/
+.vs/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.lib
+*.dll
+
+# Logs / scratch
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+
+# Claude / agent scaffolding — never leak
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
