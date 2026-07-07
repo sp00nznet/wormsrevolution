@@ -67,23 +67,39 @@ Cleared the whole class in two moves:
 Rebuilt with real dispatch (`WORMS_HARVEST=OFF`): **boots crash-free** into the
 render loop.
 
-## Phase 5: Renders the intro (REACHED)
+## Phase 5: Front-end → title screen (REACHED)
 
-- **Renders the Team17 Digital Ltd intro logo** (`images/team17_splash.png`) and
-  advances into the **intro cinematic** — full-motion `.wmv` playback decoding and
-  presenting (`images/intro_movie.png`). Front-end sequence is live.
-- Known issue: some `PM4_DRAW_INDX` calls report `Vertex fetch constant … invalid`
-  and fail in the GPU backend — a subset of geometry isn't drawing yet (the movies
-  and logo present fine). Next GPU bring-up target.
+- **Full intro sequence plays**: Team17 Digital Ltd logo (`images/team17_splash.png`)
+  → publisher logos (Warner Bros. et al.) → intro cinematic — all full-motion
+  `.wmv` decoding and presenting **full-frame** (`images/intro_movie.png`).
+- **Lands on the animated title screen** (`images/title_screen.png`) — washing
+  machine, sunflowers, tree, `WORMS` logo, panning sky — **rendering complete and
+  uncropped**. Reached by spamming skip keys (Space/Enter/Esc) through the intro.
+
+### The "only the top-left of the logo" report — resolved
+
+The first hero screenshot was a *zoomed frame of the Team17 intro animation*, which
+looks cropped. It isn't: the FMVs present full-frame (verified on the Warner Bros.
+logo) and the title screen renders the whole scene. No viewport/scanout crop — the
+presenter letterboxes the guest 1280×720 output to the window correctly (thin
+pillarbars only).
+
+### Known issue (cosmetic)
+
+Some `PM4_DRAW_INDX(4, 13, 2)` draws — 4-vertex **rectangle-list** (an overlay
+effect) — are dropped: their vertex fetch constant reads as type `kTexture` (2), so
+the Xenia-derived backend's validation rejects them (`--gpu_allow_invalid_fetch_constants`
+only bypasses the `kInvalidVertex`/type-1 case, not this one). The logos, cinematic,
+and title screen all render regardless, so it's cosmetic for now. Chasing it means
+SDK-side GPU work, deferred.
 
 ### Next up (TODO)
 
-- [ ] GPU: chase the invalid vertex-fetch-constant draws (fetch-constant setup vs.
-      backend support for this draw type — `tess_mode=1`, `edram_mode=4`).
-- [ ] Front-end past the intro → title → menu (needs interactive input; watch for
-      more computed-call targets on menu paths and harvest/register as they appear).
+- [ ] Drive the menu into gameplay (interactive input; watch for more computed-call
+      targets on menu/match paths — re-enable `-DWORMS_HARVEST=ON` and register).
 - [ ] Gameplay: 2D physics/terrain, turn loop, weapons. Local play first
       (single-player / hot-seat) to sidestep Xbox Live stubbing.
+- [ ] GPU: the dropped rectangle-list overlay draws (SDK-side).
 - [ ] Audio (FMOD `.fev`/`.fsb` banks + XMA), input mapping, DLC packs.
 - [ ] Retire the bring-up scaffolds (`REX_DUMP_IMAGE` hook, `dispatch_tolerance`)
       once the reachable paths are complete.

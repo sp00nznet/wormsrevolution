@@ -6,16 +6,18 @@ original code is translated to C++ with the [ReXGlue SDK](https://github.com/rex
 **v0.8.0** and linked against its runtime. It builds clean and boots into the
 runtime; bring-up is in progress.
 
-## Status: **renders the intro** 🪱
+## Status: **boots to the title screen** 🪱
 
 Extraction → triage → codegen → build → bring-up, all in one sitting. `worms.exe`
-links on the first try, boots crash-free, and **renders the Team17 intro logo and
-the intro cinematic** — full-motion video decoding and presenting natively.
+links on the first try, boots crash-free, plays the full intro sequence (Team17 →
+publisher logos → cinematic, all full-motion video decoding and presenting
+natively), and lands on the **animated Worms Revolution title screen**.
 
-![Worms Revolution — Team17 intro rendering natively](images/team17_splash.png)
+![Worms Revolution title screen, recompiled and running natively on D3D12](images/title_screen.png)
 
-*The Team17 Digital Ltd intro, rendered by the recompiled game on D3D12. From here
-it rolls into the intro movie (`images/intro_movie.png`).* See
+*The title screen — washing machine, sunflowers, the `WORMS` logo, animated sky —
+rendered by the recompiled game on D3D12. The intro logos and cinematic
+(`images/team17_splash.png`, `images/intro_movie.png`) get you here.* See
 [PROGRESS.md](PROGRESS.md) for the full blow-by-blow.
 
 ## How it got here
@@ -27,7 +29,7 @@ GoD package ──▶ STFS extract ──▶ XEX triage ──▶ rexglue init +
               (170 files)      (base 0x82000000)  (PowerPC → C++, 88,816 fns)
       │
       └──▶ cmake/clang build ──▶ worms.exe (74 MB) ──▶ boot ──▶ runtime up
-           ──▶ XEX loaded ──▶ 🎬 Team17 splash + intro movie rendering
+           ──▶ XEX loaded ──▶ 🎬 intro logos + cinematic ──▶ 🪱 title screen
 ```
 
 Codegen and build were minutes of work. The craft was **runtime bring-up**:
@@ -48,9 +50,11 @@ Codegen and build were minutes of work. The craft was **runtime bring-up**:
   (2) wired a tolerant indirect dispatcher to **harvest** the handful of
   `lis/addi`-computed targets that pointer scans can't see (just 3 on the boot
   path). **444 hints** total → boots crash-free.
-- **Rendering.** Team17 logo and the intro cinematic present on D3D12. Some
-  geometry draws still fail an invalid vertex-fetch-constant check — the next
-  bring-up target.
+- **Rendering.** Intro logos, cinematic, and the full title screen present
+  correctly on D3D12. A subset of 4-vertex rectangle-list draws (an overlay
+  effect) are dropped by the backend's vertex-fetch validation — cosmetic, the
+  front-end renders fine. Next bring-up targets: those draws, then driving the
+  menu into gameplay.
 
 ## Binary facts
 
