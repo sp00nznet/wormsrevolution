@@ -6,6 +6,7 @@
 
 #include <rex/rex_app.h>
 
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 
