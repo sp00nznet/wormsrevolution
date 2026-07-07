@@ -84,22 +84,36 @@ logo) and the title screen renders the whole scene. No viewport/scanout crop —
 presenter letterboxes the guest 1280×720 output to the window correctly (thin
 pillarbars only).
 
-### Known issue (cosmetic)
+## Phase 6: Gameplay (PLAYABLE)
 
-Some `PM4_DRAW_INDX(4, 13, 2)` draws — 4-vertex **rectangle-list** (an overlay
-effect) — are dropped: their vertex fetch constant reads as type `kTexture` (2), so
-the Xenia-derived backend's validation rejects them (`--gpu_allow_invalid_fetch_constants`
-only bypasses the `kInvalidVertex`/type-1 case, not this one). The logos, cinematic,
-and title screen all render regardless, so it's cosmetic for now. Chasing it means
-SDK-side GPU work, deferred.
+Rebuilt with `-DWORMS_HARVEST=ON` (tolerant dispatch) and drove title → main menu
+(the wrench/workshop screen) → submenus → **the tutorial, played end to end**:
+worms, destructible terrain, weapons, physics, camera, and input all work.
+
+**Definitive result: the reachable game needs zero new functions.** Across the full
+session — intro, every menu, and a real tutorial play-through — the harvest logged
+**0** unregistered computed-call targets and there were **0** FATALs. The 444
+registered hints cover everything the game actually reaches. The recompiled side is
+functionally complete for the reachable game.
+
+### The one real gap: in-game text (memexport)
+
+The `PM4_DRAW_INDX(4, 13, 2)` drops (4-vertex **rectangle-list**, vertex fetch
+constant typed `kTexture`/2) are Worms' **text/UI glyphs**. Worms emits text via
+*memexport* vertex shaders — the vertex shader writes generated geometry back to
+guest memory, and the "vertex fetch" the backend validates isn't a real vertex
+buffer. This SDK's D3D12 backend doesn't implement memexport yet (the source has
+explicit `TODO`s: *"Don't drop the draw call completely if the vertex shader has
+memexport"*), so those draws are dropped. Effect: **speech bubbles render but not
+the words; menu buttons are blank.** Everything non-text renders and the game plays.
+This is an SDK-side GPU feature, not missing recompiled code.
 
 ### Next up (TODO)
 
-- [ ] Drive the menu into gameplay (interactive input; watch for more computed-call
-      targets on menu/match paths — re-enable `-DWORMS_HARVEST=ON` and register).
-- [ ] Gameplay: 2D physics/terrain, turn loop, weapons. Local play first
-      (single-player / hot-seat) to sidestep Xbox Live stubbing.
-- [ ] GPU: the dropped rectangle-list overlay draws (SDK-side).
-- [ ] Audio (FMOD `.fev`/`.fsb` banks + XMA), input mapping, DLC packs.
+- [ ] Implement/enable memexport in the ReXGlue D3D12 backend (SDK fork) → in-game
+      text. This is the single highest-value fix; unblocks readable menus + HUD.
+- [ ] Audio verification (FMOD `.fev`/`.fsb` banks + XMA), input mapping, DLC packs.
+- [ ] Full-game coverage beyond the tutorial (campaign, multiplayer/Xbox Live paths
+      will need more kernel/XAM stubbing).
 - [ ] Retire the bring-up scaffolds (`REX_DUMP_IMAGE` hook, `dispatch_tolerance`)
-      once the reachable paths are complete.
+      — kept for now, both off by default.

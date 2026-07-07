@@ -6,12 +6,13 @@ original code is translated to C++ with the [ReXGlue SDK](https://github.com/rex
 **v0.8.0** and linked against its runtime. It builds clean and boots into the
 runtime; bring-up is in progress.
 
-## Status: **boots to the title screen** 🪱
+## Status: **playable** 🪱
 
 Extraction → triage → codegen → build → bring-up, all in one sitting. `worms.exe`
-links on the first try, boots crash-free, plays the full intro sequence (Team17 →
-publisher logos → cinematic, all full-motion video decoding and presenting
-natively), and lands on the **animated Worms Revolution title screen**.
+links on the first try, boots crash-free, plays the full intro (Team17 → publisher
+logos → cinematic, all full-motion video decoding natively), lands on the animated
+title screen, and **runs actual gameplay** — the tutorial is playable end to end:
+worms, terrain, weapons, physics, camera, and input all work.
 
 ![Worms Revolution title screen, recompiled and running natively on D3D12](images/title_screen.png)
 
@@ -19,6 +20,14 @@ natively), and lands on the **animated Worms Revolution title screen**.
 rendered by the recompiled game on D3D12. The intro logos and cinematic
 (`images/team17_splash.png`, `images/intro_movie.png`) get you here.* See
 [PROGRESS.md](PROGRESS.md) for the full blow-by-blow.
+
+**One known gap:** in-game **text doesn't render** — speech bubbles appear but not
+the words, menu buttons are blank. Worms draws its text/UI via *memexport* vertex
+shaders (the GPU writes generated geometry back to memory), which this ReXGlue
+build's D3D12 backend doesn't implement yet, so those draws are dropped. Everything
+non-text renders and the game is fully playable; this is an SDK-side GPU feature,
+not missing recompiled code (the whole reachable game needs **zero** functions
+beyond the 444 already registered).
 
 ## How it got here
 
@@ -29,7 +38,7 @@ GoD package ──▶ STFS extract ──▶ XEX triage ──▶ rexglue init +
               (170 files)      (base 0x82000000)  (PowerPC → C++, 88,816 fns)
       │
       └──▶ cmake/clang build ──▶ worms.exe (74 MB) ──▶ boot ──▶ runtime up
-           ──▶ XEX loaded ──▶ 🎬 intro logos + cinematic ──▶ 🪱 title screen
+           ──▶ XEX loaded ──▶ 🎬 intro + cinematic ──▶ 🪱 title ──▶ 🎮 gameplay
 ```
 
 Codegen and build were minutes of work. The craft was **runtime bring-up**:
@@ -50,11 +59,13 @@ Codegen and build were minutes of work. The craft was **runtime bring-up**:
   (2) wired a tolerant indirect dispatcher to **harvest** the handful of
   `lis/addi`-computed targets that pointer scans can't see (just 3 on the boot
   path). **444 hints** total → boots crash-free.
-- **Rendering.** Intro logos, cinematic, and the full title screen present
-  correctly on D3D12. A subset of 4-vertex rectangle-list draws (an overlay
-  effect) are dropped by the backend's vertex-fetch validation — cosmetic, the
-  front-end renders fine. Next bring-up targets: those draws, then driving the
-  menu into gameplay.
+- **Gameplay reached.** Drove title → menus → tutorial and played it: worms,
+  destructible terrain, weapons, physics, and camera all render and respond. The
+  tolerant-dispatch harvest logged **zero** unregistered targets across the whole
+  session — the reachable game is functionally complete on the recompiled side.
+- **The text gap.** The only missing piece is UI/in-game text (see status above):
+  memexport vertex shaders aren't implemented in this SDK's D3D12 backend, so the
+  4-vertex rectangle-list draws that emit glyphs get dropped. An SDK-side fix.
 
 ## Binary facts
 
