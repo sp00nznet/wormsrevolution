@@ -1,12 +1,13 @@
 # Worms Revolution — native PC recompilation
 
 **Team17's turn-based artillery classic, statically recompiled from Xbox 360
-PowerPC to a native x86-64 executable.** No emulator, no interpreter, no JIT — the
+PowerPC to a native x86-64 executable.** Gameplay runs; text and UI do not
+render (see the known gap below). No emulator, no interpreter, no JIT — the
 original code is translated to C++ with the [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk)
 **v0.8.0** and linked against its runtime. It builds clean and boots into the
 runtime; bring-up is in progress.
 
-## Status: **playable** 🪱
+## Status: **playable, without text** 🪱
 
 Extraction → triage → codegen → build → bring-up, all in one sitting. `worms.exe`
 links on the first try, boots crash-free, plays the full intro (Team17 → publisher
